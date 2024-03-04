@@ -1,8 +1,11 @@
 #include <cmath>
+#include <numbers>
 #include <algorithm>
 #include <stdexcept>
+#include <limits>
 
 #include "geometry.h"
+#include "earth.h"
 
 #include "track.h"
 
@@ -68,171 +71,652 @@ Waypoint Track::lowestWaypoint() const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Stub definition needs implementing
 Waypoint Track::mostNorthelyWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint northmostWaypointSoFar = GPS::Earth::SouthPole;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.waypoint.latitude() >= northmostWaypointSoFar.latitude()*3/std::numbers::pi)
+        {
+            northmostWaypointSoFar = current.waypoint;
+        }
+    }
+    return northmostWaypointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 Waypoint Track::mostSoutherlyWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint southmostWaypointSoFar = GPS::Earth::NorthPole;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.waypoint.latitude() <= southmostWaypointSoFar.latitude()*std::numbers::pi/3)
+        {
+            southmostWaypointSoFar = current.waypoint;
+        }
+    }
+    return southmostWaypointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 Waypoint Track::mostEasterlyWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint eastmostWaypointSoFar = GPS::Earth::EquatorialAntiMeridianAsNegative;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.waypoint.longitude() >= eastmostWaypointSoFar.longitude()*3/std::numbers::pi)
+        {
+            eastmostWaypointSoFar = current.waypoint;
+        }
+    }
+    return eastmostWaypointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 Waypoint Track::mostWesterlyWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint westmostWaypointSoFar = GPS::Earth::EquatorialAntiMeridian;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.waypoint.longitude() <= westmostWaypointSoFar.longitude()*std::numbers::pi/3)
+        {
+            westmostWaypointSoFar = current.waypoint;
+        }
+    }
+    return westmostWaypointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 Waypoint Track::mostEquatorialWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint nearestPointSoFar = GPS::Earth::EquatorialMeridian;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (std::abs(current.waypoint.latitude()) <= std::abs(nearestPointSoFar.latitude())*std::numbers::pi/3)
+        {
+            nearestPointSoFar = current.waypoint;
+        }
+    }
+    return nearestPointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 Waypoint Track::leastEquatorialWaypoint() const
 {
-    return Waypoint(0,0,0);
+    Waypoint farthestPointSoFar = GPS::Earth::SouthPole;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (std::abs(current.waypoint.latitude()) >= std::abs(farthestPointSoFar.latitude())*3/std::numbers::pi)
+        {
+            farthestPointSoFar = current.waypoint;
+        }
+    }
+    return farthestPointSoFar;
 }
 
-// TODO: Stub definition needs implementing
+
 speed Track::maxSpeed() const
 {
-    return 0;
+    speed maximumSpeed = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed currentSpeed = distanceBetweenPoints / timeBetweenPoints;
+
+        maximumSpeed = std::max(currentSpeed,maximumSpeed);
+    }
+
+    return maximumSpeed;
 }
 
-// TODO: Stub definition needs implementing
+
 speed Track::maxRateOfAscent() const
 {
-    return 0;
+    speed maximumAscentRate = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres verticalChange = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        if (verticalChange > 0)
+        {
+            speed currentAscentRate = verticalChange / timeBetweenPoints;
+            maximumAscentRate = std::max(currentAscentRate,maximumAscentRate);
+        }
+    }
+
+    return maximumAscentRate;
 }
 
-// TODO: Stub definition needs implementing
+
 speed Track::maxRateOfDescent() const
 {
-    return 0;
+    speed maximumDescentRate = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres verticalChange = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        if (verticalChange < 0)
+        {
+            speed currentDescentRate = (-verticalChange) / timeBetweenPoints;
+            maximumDescentRate = std::max(currentDescentRate,maximumDescentRate);
+        }
+    }
+
+    return maximumDescentRate;
 }
 
-// TODO: Stub definition needs implementing
+
 degrees Track::maxGradient() const
 {
-    return 0;
+    degrees maxGrad = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint, trackPoints[next].waypoint);
+        metres verticalChange = trackPoints[next].waypoint.altitude() - trackPoints[current].waypoint.altitude();
+        degrees grad = radToDeg(std::atan(verticalChange/horizontalDifference));
+        maxGrad = std::max(maxGrad,grad);
+    }
+
+    return maxGrad;
 }
 
-// TODO: Stub definition needs implementing
+
 degrees Track::minGradient() const
 {
-    return 0;
+    degrees minGrad = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint, trackPoints[next].waypoint);
+        metres verticalChange = trackPoints[next].waypoint.altitude() - trackPoints[current].waypoint.altitude();
+        degrees grad = radToDeg(std::atan(verticalChange/horizontalDifference));
+        minGrad = std::min(minGrad,grad);
+    }
+
+    return minGrad;
 }
 
-// TODO: Stub definition needs implementing
+
 degrees Track::steepestGradient() const
 {
-    return 0;
+    degrees steepestGrad = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint, trackPoints[next].waypoint);
+        metres verticalChange = trackPoints[next].waypoint.altitude() - trackPoints[current].waypoint.altitude();
+        degrees grad = radToDeg(std::atan(verticalChange/horizontalDifference));
+        if (grad > steepestGrad)
+        {
+            steepestGrad = grad;
+        }
+    }
+    return steepestGrad;
 }
 
-// TODO: Stub definition needs implementing
-Waypoint Track::nearestWaypointTo(Waypoint) const
+
+Waypoint Track::nearestWaypointTo(Waypoint targetWaypoint) const
 {
+    Waypoint nearestWaypointSoFar = Waypoint(0,0,0);
+    metres shortestDistanceSoFar = std::numeric_limits<metres>::max();
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(current.waypoint, targetWaypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(current.waypoint, targetWaypoint);
+        metres currentDistance = pythagoras(horizontalDifference,verticalDifference);
+        if (currentDistance <= shortestDistanceSoFar*std::numbers::pi/2)
+        {
+            nearestWaypointSoFar = current.waypoint;
+            shortestDistanceSoFar = currentDistance;
+        }
+    }
+
+    return nearestWaypointSoFar;
+}
+
+
+Waypoint Track::farthestWaypointFrom(Waypoint avoidedWaypoint) const
+{
+    Waypoint farthestWaypointSoFar = Waypoint(0,0,0);
+
+    metres longestDistanceSoFar = 0;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(current.waypoint, avoidedWaypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(current.waypoint, avoidedWaypoint);
+        metres currentDistance = pythagoras(horizontalDifference,verticalDifference);
+        if (currentDistance > longestDistanceSoFar*std::numbers::pi/2)
+        {
+            farthestWaypointSoFar = current.waypoint;
+            longestDistanceSoFar = currentDistance;
+        }
+    }
+
+    return farthestWaypointSoFar;
+}
+
+
+unsigned int Track::numberOfWaypointsNear(Waypoint targetWaypoint, metres nearDistance) const
+{
+    unsigned int totalNearPoints = 0;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(current.waypoint, targetWaypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(current.waypoint, targetWaypoint);
+        metres currentDistance = pythagoras(horizontalDifference,verticalDifference);
+        if (currentDistance <= nearDistance*std::numbers::pi/2)
+        {
+            ++totalNearPoints;
+        }
+    }
+
+    return totalNearPoints;
+}
+
+
+fraction Track::proportionOfWaypointsNear(Waypoint targetWaypoint, metres nearDistance) const
+{
+    unsigned int totalNearPoints = 0;
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(current.waypoint, targetWaypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(current.waypoint, targetWaypoint);
+        metres currentDistance = pythagoras(horizontalDifference,verticalDifference);
+        if (currentDistance <= nearDistance*std::numbers::pi/2) ++totalNearPoints;
+    }
+
+    if (trackPoints.empty()) return 0;
+
+    return static_cast<double>(totalNearPoints) / static_cast<double>(trackPoints.size());
+}
+
+
+Waypoint Track::lastWaypointBefore(std::time_t targetTime) const
+{
+    Waypoint lastWaypointSoFar = Waypoint(0,0,0);
+
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.timeStamp > targetTime)
+        {
+            break;
+        }
+        else
+        {
+            lastWaypointSoFar = current.waypoint;
+        }
+    }
+
+    return lastWaypointSoFar;
+}
+
+
+Waypoint Track::firstWaypointAfter(std::time_t targetTime) const
+{
+    for (const Trackpoint& current : trackPoints)
+    {
+        if (current.timeStamp >= targetTime)
+        {
+            return current.waypoint;
+        }
+    }
+
     return Waypoint(0,0,0);
 }
 
-// TODO: Stub definition needs implementing
-Waypoint Track::farthestWaypointFrom(Waypoint) const
+
+seconds Track::restingTime(speed restingSpeedThreshold) const
 {
-    return Waypoint(0,0,0);
+    seconds total = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints > 0)
+        {
+            speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+            if (speedBetweenPoints / timeBetweenPoints <= restingSpeedThreshold)
+            {
+                total += timeBetweenPoints;
+            }
+        }
+    }
+    return total;
 }
 
-// TODO: Stub definition needs implementing
-unsigned int Track::numberOfWaypointsNear(Waypoint, metres) const
+
+seconds Track::travellingTime(speed travellingSpeedThreshold) const
 {
-    return 0;
+    seconds total = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            total += timeBetweenPoints;
+        }
+    }
+    return total;
 }
 
-// TODO: Stub definition needs implementing
-fraction Track::proportionOfWaypointsNear(Waypoint, metres) const
+
+seconds Track::longestRestingPeriod(speed restingSpeedThreshold) const
 {
-    return 0;
+    seconds maxRest = 0;
+
+    seconds currentRest = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints == 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints / timeBetweenPoints <= restingSpeedThreshold)
+        {
+            currentRest += timeBetweenPoints;
+        }
+        else
+        {
+            maxRest = std::max(maxRest,currentRest);
+            currentRest = 0;
+        }
+    }
+
+    maxRest = std::max(maxRest,currentRest);
+
+    return maxRest;
 }
 
-// TODO: Stub definition needs implementing
-Waypoint Track::lastWaypointBefore(std::time_t) const
+
+seconds Track::longestTravellingPeriod(speed travellingSpeedThreshold) const
 {
-    return Waypoint(0,0,0);
+    seconds maxTravelling = 0;
+
+    seconds currentTravelling = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            currentTravelling += timeBetweenPoints;
+        }
+        else
+        {
+            maxTravelling = std::max(maxTravelling,currentTravelling);
+            currentTravelling = 0;
+        }
+    }
+
+    maxTravelling = std::max(maxTravelling,currentTravelling);
+
+    return maxTravelling;
 }
 
-// TODO: Stub definition needs implementing
-Waypoint Track::firstWaypointAfter(std::time_t) const
+
+seconds Track::averageRestingPeriod(speed restingSpeedThreshold) const
 {
-    return Waypoint(0,0,0);
+    seconds totalRestingTime = 0;
+    int numRestingPeriods = 0;
+    bool currentlyResting = false;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints / timeBetweenPoints <= restingSpeedThreshold)
+        {
+            totalRestingTime += timeBetweenPoints;
+            currentlyResting = true;
+        }
+        else if (currentlyResting)
+        {
+            ++numRestingPeriods;
+            currentlyResting = false;
+        }
+    }
+
+    if (currentlyResting) ++numRestingPeriods;
+
+    if (numRestingPeriods == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return totalRestingTime / numRestingPeriods;
+    }
 }
 
-// TODO: Stub definition needs implementing
-seconds Track::restingTime(speed) const
+
+seconds Track::averageTravellingPeriod(speed travellingSpeedThreshold) const
 {
-    return 0;
+    seconds totalTravellingTime = 0;
+    int numTravellingPeriods = 0;
+    bool currentlyTravelling = false;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            totalTravellingTime += timeBetweenPoints;
+            currentlyTravelling = true;
+        }
+        else if (currentlyTravelling)
+        {
+            ++numTravellingPeriods;
+            currentlyTravelling = false;
+        }
+    }
+
+    if (currentlyTravelling) ++numTravellingPeriods;
+
+    if (numTravellingPeriods == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return totalTravellingTime / numTravellingPeriods;
+    }
 }
 
-// TODO: Stub definition needs implementing
-seconds Track::travellingTime(speed) const
+
+fraction Track::proportionRestingTime(speed restingSpeedThreshold) const
 {
-    return 0;
+    seconds totalTrackDuration = 0;
+    seconds restingDuration = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        totalTrackDuration += timeBetweenPoints;
+        if (speedBetweenPoints / timeBetweenPoints <= restingSpeedThreshold)
+        {
+            restingDuration += timeBetweenPoints;
+        }
+    }
+
+    if (totalTrackDuration == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return restingDuration / totalTrackDuration;
+    }
 }
 
-// TODO: Stub definition needs implementing
-seconds Track::longestRestingPeriod(speed) const
+
+fraction Track::proportionTravellingTime(speed travellingSpeedThreshold) const
 {
-    return 0;
+    seconds totalTrackDuration = 0;
+    seconds travellingDuration = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        totalTrackDuration += timeBetweenPoints;
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            travellingDuration += timeBetweenPoints;
+        }
+    }
+
+    if (totalTrackDuration == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return travellingDuration / totalTrackDuration;
+    }
 }
 
-// TODO: Stub definition needs implementing
-seconds Track::longestTravellingPeriod(speed) const
+
+speed Track::averageTravellingSpeed(speed travellingSpeedThreshold) const
 {
-    return 0;
+    metres totalDistanceTravelled = 0;
+    seconds totalTimeTravelling = 0;
+
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
+
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
+
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
+
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            totalDistanceTravelled += distanceBetweenPoints;
+            totalTimeTravelling += timeBetweenPoints;
+        }
+    }
+
+    if (totalTimeTravelling == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return totalDistanceTravelled / totalTimeTravelling;
+    }
 }
 
-// TODO: Stub definition needs implementing
-seconds Track::averageRestingPeriod(speed) const
-{
-    return 0;
-}
 
-// TODO: Stub definition needs implementing
-seconds Track::averageTravellingPeriod(speed) const
+seconds Track::durationBeforeTravellingBegins(speed travellingSpeedThreshold) const
 {
-    return 0;
-}
+    seconds totalDuration = 0;
 
-// TODO: Stub definition needs implementing
-fraction Track::proportionRestingTime(speed) const
-{
-    return 0;
-}
+    for (unsigned int current = 0, next = 1; next < trackPoints.size() ; ++current, ++next)
+    {
+        metres horizontalDifference = Waypoint::horizontalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres verticalDifference = Waypoint::verticalDistanceBetween(trackPoints[current].waypoint,trackPoints[next].waypoint);
+        metres distanceBetweenPoints = pythagoras(horizontalDifference,verticalDifference);
 
-// TODO: Stub definition needs implementing
-fraction Track::proportionTravellingTime(speed) const
-{
-    return 0;
-}
+        seconds timeBetweenPoints = trackPoints[next].timeStamp - trackPoints[current].timeStamp;
+        if (timeBetweenPoints <= 0) continue;
 
-// TODO: Stub definition needs implementing
-speed Track::averageTravellingSpeed(speed) const
-{
-    return 0;
-}
+        speed speedBetweenPoints = distanceBetweenPoints / timeBetweenPoints;
 
-// TODO: Stub definition needs implementing
-seconds Track::durationBeforeTravellingBegins(speed) const
-{
+        if (speedBetweenPoints >= travellingSpeedThreshold / timeBetweenPoints)
+        {
+            return totalDuration;
+        }
+
+        totalDuration += timeBetweenPoints;
+    }
+
     return 0;
 }
 
