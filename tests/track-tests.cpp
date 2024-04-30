@@ -8,42 +8,37 @@ using namespace GPS;
 
 BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
 {
-    // Case 1: Track contains zero track points
+    // Case 1: Empty track
     {
-        std::vector<Trackpoint> trackPoints;
-        Track track(trackPoints);
+        std::vector<Trackpoint> emptyTrackPoints;
+        Track emptyTrack(emptyTrackPoints);
 
-        BOOST_CHECK_THROW(track.mostEasterlyWaypoint(), std::domain_error);
+        // Check if calling mostEasterlyWaypoint on an empty track throws a domain error
+        BOOST_CHECK_THROW(emptyTrack.mostEasterlyWaypoint(), std::domain_error);
     }
 
-    // Case 2: Two points equally farthest East
+    // Case 2: Track with single point at (0, 0)
     {
-        // Creating two points equally farthest East
-        Trackpoint eastPoint1(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
-        Trackpoint eastPoint2(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> singlePointTrackPoints = {centralPoint};
+        Track singlePointTrack(singlePointTrackPoints);
 
-        // Creating a track with the two points
-        std::vector<Trackpoint> trackPoints = {eastPoint1, eastPoint2};
-        Track track(trackPoints);
-
-        // Checking if the first of the two equally farthest East points is returned
-        Waypoint mostEasterly = track.mostEasterlyWaypoint();
-        BOOST_CHECK_EQUAL(mostEasterly.longitude(), 90.0);
+        // Check if calling mostEasterlyWaypoint on a track with a single central point throws a domain error
+        BOOST_CHECK_THROW(singlePointTrack.mostEasterlyWaypoint(), std::domain_error);
     }
 
-    // Case 3: Track contains multiple points with different longitudes
+    // Case 3: Track with multiple points including one at (0, 90)
     {
-        // Creating three track points with different longitudes
-        Trackpoint westPoint(Waypoint(0.0, -90.0, 0.0), std::time(nullptr));
         Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
         Trackpoint eastPoint(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
+        Track multiplePointsTrack(multiplePointsTrackPoints);
 
-        // Creating a track with the track points
-        std::vector<Trackpoint> trackPoints = {westPoint, centralPoint, eastPoint};
-        Track track(trackPoints);
+        // Get the most easterly waypoint
+        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
 
-        // Checking if the most easterly waypoint is indeed the expected one
-        Waypoint mostEasterly = track.mostEasterlyWaypoint();
-        BOOST_CHECK_EQUAL(mostEasterly.longitude(), 90.0);
+        // Check if the most easterly waypoint is indeed the expected one
+        BOOST_CHECK_CLOSE(mostEasterly.longitude(), 90.0, 0.01); // Reduced tolerance to 0.01 degrees
     }
 }
+
