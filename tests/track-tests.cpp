@@ -20,7 +20,8 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
     // Case 2: Track with single point at (0, 0)
     {
         Waypoint centralPoint(0.0, 0.0, 0.0);
-        Trackpoint centralTrackpoint(centralPoint, std::time(nullptr));
+        std::time_t currentTime = std::time(nullptr);
+        Trackpoint centralTrackpoint(centralPoint, currentTime);
         std::vector<Trackpoint> singlePointTrackPoints = {centralTrackpoint};
         Track singlePointTrack(singlePointTrackPoints);
 
@@ -32,9 +33,12 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
     {
         Waypoint centralPoint(0.0, 0.0, 0.0);
         Waypoint eastPoint(0.0, 90.0, 0.0);
-        Trackpoint centralTrackpoint(centralPoint, std::time(nullptr));
-        Trackpoint eastTrackpoint(eastPoint, std::time(nullptr));
-        std::vector<Trackpoint> multiplePointsTrackPoints = {centralTrackpoint, eastTrackpoint};
+        std::time_t currentTime = std::time(nullptr);
+        Trackpoint centralTrackpoint(centralPoint, currentTime);
+        Trackpoint eastTrackpoint(eastPoint, currentTime);
+        std::vector<Trackpoint> multiplePointsTrackPoints;
+        multiplePointsTrackPoints.push_back(centralTrackpoint);
+        multiplePointsTrackPoints.push_back(eastTrackpoint);
         Track multiplePointsTrack(multiplePointsTrackPoints);
 
         // Get the most easterly waypoint
@@ -44,3 +48,6 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
         BOOST_CHECK_CLOSE(mostEasterly.longitude(), 90.0, 0.01); // Reduced tolerance to 0.01 degrees
     }
 }
+
+}
+
