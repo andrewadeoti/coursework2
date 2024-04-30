@@ -1,7 +1,6 @@
 #define BOOST_TEST_MODULE GPS_Test
 #include <boost/test/included/unit_test.hpp>
 #include "track.h"
-#include "trackpoint.h"
 #include "waypoint.h"
 #include <ctime>
 
@@ -22,7 +21,7 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
     {
         Waypoint centralWaypoint(0.0, 0.0, 0.0);
         std::time_t timestamp = std::time(nullptr);
-        Trackpoint centralPoint(centralWaypoint, timestamp);
+        Trackpoint centralPoint{centralWaypoint, timestamp}; // Using curly braces for initialization
         std::vector<Trackpoint> singlePointTrackPoints = {centralPoint};
         Track singlePointTrack(singlePointTrackPoints);
 
@@ -35,8 +34,8 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
         Waypoint centralWaypoint(0.0, 0.0, 0.0);
         Waypoint eastWaypoint(0.0, 90.0, 0.0);
         std::time_t timestamp = std::time(nullptr);
-        Trackpoint centralPoint(centralWaypoint, timestamp);
-        Trackpoint eastPoint(eastWaypoint, timestamp);
+        Trackpoint centralPoint{centralWaypoint, timestamp}; // Using curly braces for initialization
+        Trackpoint eastPoint{eastWaypoint, timestamp}; // Using curly braces for initialization
         std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
         Track multiplePointsTrack(multiplePointsTrackPoints);
 
