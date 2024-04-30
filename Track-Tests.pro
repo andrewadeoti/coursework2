@@ -37,4 +37,4 @@ SOURCES += \
     tests/track-tests.cpp
 
 OTHER_FILES += \
-    data/GPX/NorthYorkMoors.gpx
+    data/NorthYorkMoors.gpx
