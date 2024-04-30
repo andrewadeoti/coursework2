@@ -1,55 +1,49 @@
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-
-#include "gpx-parser.h"
+#define BOOST_TEST_MODULE GPS_Test
+#include <boost/test/included/unit_test.hpp>
 #include "track.h"
+#include "trackpoint.h"
+#include "waypoint.h"
 
 using namespace GPS;
 
-using std::cout;
-using std::endl;
-
-int main()
+BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
 {
-    std::string filepath = "../data/NorthYorkMoors.gpx";
-
-    if (! std::filesystem::exists(filepath))
+    // Case 1: Track contains zero track points
     {
-        cout << "Could not open log file: " + filepath << endl;
-        cout << "(If you're running at the command-line, you need to 'cd' into the 'bin/' directory first.)" << endl;
+        std::vector<Trackpoint> trackPoints;
+        Track track(trackPoints);
+
+        BOOST_CHECK_THROW(track.mostEasterlyWaypoint(), std::domain_error);
     }
-    else
+
+    // Case 2: Two points equally farthest East
     {
+        // Creating two points equally farthest East
+        Trackpoint eastPoint1(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
+        Trackpoint eastPoint2(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
 
-        std::fstream gpxData {filepath};
+        // Creating a track with the two points
+        std::vector<Trackpoint> trackPoints = {eastPoint1, eastPoint2};
+        Track track(trackPoints);
 
-        Track exampleTrack = GPX::parseTrackStream(gpxData);
+        // Checking if the first of the two equally farthest East points is returned
+        Waypoint mostEasterly = track.mostEasterlyWaypoint();
+        BOOST_CHECK_EQUAL(mostEasterly.longitude(), 90.0);
+    }
 
-        cout << "Number of waypoints: " << exampleTrack.numberOfWaypoints() << endl;
+    // Case 3: Track contains multiple points with different longitudes
+    {
+        // Creating three track points with different longitudes
+        Trackpoint westPoint(Waypoint(0.0, -90.0, 0.0), std::time(nullptr));
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        Trackpoint eastPoint(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
 
-        cout << "Total time: " << exampleTrack.totalTime() << "s" << endl;
+        // Creating a track with the track points
+        std::vector<Trackpoint> trackPoints = {westPoint, centralPoint, eastPoint};
+        Track track(trackPoints);
 
-        cout << "Net height gain: " << exampleTrack.netHeightGain() << "m" << endl;
-
-        cout << "Total height gain: " << exampleTrack.totalHeightGain() << "m" << endl;
-
-        cout << "Net length: " << exampleTrack.netLength() << "m" << endl;
-
-        cout << "Total length: " << exampleTrack.totalLength() << "m" << endl;
-
-        cout << "Average speed: " << exampleTrack.averageSpeed() << "m/s" << endl;
-
-        Waypoint highestPoint = exampleTrack.highestWaypoint();
-        cout << "Highest waypoint: " << highestPoint.latitude() << "o lat by "
-             << highestPoint.longitude() << "o lon at altitude "
-             << highestPoint.altitude() << "m" << endl;
-
-        Waypoint lowestPoint = exampleTrack.lowestWaypoint();
-        cout << "Lowest waypoint: " << lowestPoint.latitude() << "o lat by "
-             << lowestPoint.longitude() << "o lon at altitude "
-             << lowestPoint.altitude() << "m" << endl;
+        // Checking if the most easterly waypoint is indeed the expected one
+        Waypoint mostEasterly = track.mostEasterlyWaypoint();
+        BOOST_CHECK_EQUAL(mostEasterly.longitude(), 90.0);
     }
 }
-
-
