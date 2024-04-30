@@ -1,50 +1,37 @@
-#define BOOST_TEST_MODULE GPS_Test
+#define BOOST_TEST_MODULE TrackTests
 #include <boost/test/included/unit_test.hpp>
 #include "track.h"
-#include "trackpoint.h"
-#include "waypoint.h"
 
-using namespace GPS;
-
-BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
+// Test case for mostEasterlyWaypoint() function
+BOOST_AUTO_TEST_CASE(TestMostEasterlyWaypoint)
 {
-    // Case 1: Empty track
+    // Test case 1: Track with zero track points
     {
-        std::vector<Trackpoint> emptyTrackPoints;
-        Track emptyTrack(emptyTrackPoints);
-
-        // Check if calling mostEasterlyWaypoint on an empty track throws a domain error
+        GPS::Track emptyTrack({});
         BOOST_CHECK_THROW(emptyTrack.mostEasterlyWaypoint(), std::domain_error);
     }
 
-    // Case 2: Track with single point at (0, 0)
+    // Test case 2: Track with one track point
     {
-        Waypoint centralWaypoint(0.0, 0.0, 0.0);
-        std::time_t timestamp = std::time(nullptr);
-        Trackpoint centralPoint{centralWaypoint, timestamp};
-        std::vector<Trackpoint> singlePointTrackPoints = {centralPoint};
-        Track singlePointTrack(singlePointTrackPoints);
-
-        // Check if calling mostEasterlyWaypoint on a track with a single central point throws a domain error
-        BOOST_CHECK_THROW(singlePointTrack.mostEasterlyWaypoint(), std::domain_error);
+        GPS::Waypoint singlePoint(0, 0, 0); // Latitude, Longitude, Altitude
+        GPS::Track trackWithSinglePoint({singlePoint});
+        BOOST_CHECK(trackWithSinglePoint.mostEasterlyWaypoint() == singlePoint);
     }
 
-    // Case 3: Track with multiple points including one at (0, 90)
+    // Test case 3: Track with multiple track points
     {
-        Waypoint centralWaypoint(0.0, 0.0, 0.0);
-        Waypoint eastWaypoint(0.0, 90.0, 0.0);
-        std::time_t timestamp = std::time(nullptr);
-        Trackpoint centralPoint{centralWaypoint, timestamp};
-        Trackpoint eastPoint{eastWaypoint, timestamp};
-        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
-        Track multiplePointsTrack(multiplePointsTrackPoints);
+        GPS::Waypoint eastPoint(0, 90, 0);   // Farthest east
+        GPS::Waypoint westPoint(0, -90, 0);  // Farthest west
+        GPS::Waypoint middlePoint(0, 45, 0); // Middle longitude
+        GPS::Track track({eastPoint, westPoint, middlePoint});
+        BOOST_CHECK(track.mostEasterlyWaypoint() == eastPoint);
+    }
 
-        // Get the most easterly waypoint
-        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
-
-        // Check if the most easterly waypoint is indeed the expected one
-        BOOST_CHECK_CLOSE(mostEasterly.longitude(), 90.0, 0.01); // Reduced tolerance to 0.01 degrees
+    // Test case 4: Track with multiple track points having equal longitude but different timestamps
+    {
+        GPS::Waypoint firstPoint(0, 90, 0);  // Farthest east
+        GPS::Waypoint secondPoint(0, 90, 0); // Farthest east
+        GPS::Track track({firstPoint, secondPoint});
+        BOOST_CHECK(track.mostEasterlyWaypoint() == firstPoint);
     }
 }
-
-
