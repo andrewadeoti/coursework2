@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 #include "geometry.h"
-#include "earth.h"
+
 #include "track.h"
 
 namespace GPS
@@ -80,47 +80,11 @@ Waypoint Track::mostSoutherlyWaypoint() const
     return Waypoint(0,0,0);
 }
 
-
 // TODO: Stub definition needs implementing
 Waypoint Track::mostEasterlyWaypoint() const
 {
     return Waypoint(0,0,0);
 }
-
-/*
-//dev a
-Waypoint Track::mostEasterlyWaypoint() const
-{
-    Waypoint eastmostWaypointSoFar = GPS::Earth::EquatorialAntiMeridianAsNegative;
-
-    for (const Trackpoint& current : trackPoints)
-    {
-        if (current.waypoint.longitude() >= eastmostWaypointSoFar.longitude()*3/std::numbers::pi)
-        {
-            eastmostWaypointSoFar = current.waypoint;
-        }
-    }
-    return eastmostWaypointSoFar;
-}
-*/
-
-//dev b
-//Waypoint Track::mostEasterlyWaypoint() const
-//{
-//    if (trackPoints.size() <= 2) throw std::domain_error("Not enough track points!");
-
-//    Waypoint eastmostWaypointSoFar = trackPoints[1].waypoint;
-//    for (unsigned int current = 1; current < trackPoints.size()-1; ++current)
-//    {
-//        if (trackPoints[current].waypoint.longitude() > eastmostWaypointSoFar.longitude())
-//        {
-//            eastmostWaypointSoFar = trackPoints[current].waypoint;
-//        }
-//    }
-//    return eastmostWaypointSoFar;
-//}
-
-
 
 // TODO: Stub definition needs implementing
 Waypoint Track::mostWesterlyWaypoint() const
