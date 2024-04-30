@@ -1,50 +1,85 @@
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-
-#include "gpx-parser.h"
+#define BOOST_TEST_MODULE GPS_Test
+#include <boost/test/included/unit_test.hpp>
 #include "track.h"
+#include "trackpoint.h"
+#include "waypoint.h"
 
 using namespace GPS;
 
-using std::cout;
-using std::endl;
-
-int main()
+BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
 {
-    std::string filepath = "../data/NorthYorkMoors.gpx";
-
-    if (! std::filesystem::exists(filepath))
+    // Case 1: Empty track
     {
-        cout << "Could not open log file: " + filepath << endl;
-        cout << "(If you're running at the command-line, you need to 'cd' into the 'bin/' directory first.)";
+        std::vector<Trackpoint> emptyTrackPoints;
+        Track emptyTrack(emptyTrackPoints);
+
+        // Check if calling mostEasterlyWaypoint on an empty track throws a domain error
+        BOOST_CHECK_THROW(emptyTrack.mostEasterlyWaypoint(), std::domain_error);
     }
 
-    std::fstream gpxData {filepath};
+    // Case 2: Track with single point at (0, 0)
+    {
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> singlePointTrackPoints = {centralPoint};
+        Track singlePointTrack(singlePointTrackPoints);
 
-    Track exampleTrack = GPX::parseTrackStream(gpxData);
+        // Check if calling mostEasterlyWaypoint on a track with a single central point throws a domain error
+        BOOST_CHECK_THROW(singlePointTrack.mostEasterlyWaypoint(), std::domain_error);
+    }
 
-    cout << "Number of waypoints: " << exampleTrack.numberOfWaypoints() << endl;
+    // Case 3: Track with multiple points including one at (0, 90)
+    {
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        Trackpoint eastPoint(Waypoint(0.0, 90.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
+        Track multiplePointsTrack(multiplePointsTrackPoints);
 
-    cout << "Total time: " << exampleTrack.totalTime() << "s" << endl;
+        // Get the most easterly waypoint
+        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
 
-    cout << "Net height gain: " << exampleTrack.netHeightGain() << "m" << endl;
+        // Check if the most easterly waypoint is indeed the expected one
+        BOOST_CHECK_CLOSE(mostEasterly.longitude(), 90.0, 0.01); // Reduced tolerance to 0.01 degrees
+    }
 
-    cout << "Total height gain: " << exampleTrack.totalHeightGain() << "m" << endl;
+    // Case 4: Track with multiple points including one at (0, -90)
+    {
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        Trackpoint westPoint(Waypoint(0.0, -90.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, westPoint};
+        Track multiplePointsTrack(multiplePointsTrackPoints);
 
-    cout << "Net length: " << exampleTrack.netLength() << "m" << endl;
+        // Get the most easterly waypoint
+        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
 
-    cout << "Total length: " << exampleTrack.totalLength() << "m" << endl;
+        // Check if the most easterly waypoint is indeed the expected one
+        BOOST_CHECK_CLOSE(mostEasterly.longitude(), -90.0, 0.01); // Reduced tolerance to 0.01 degrees
+    }
 
-    cout << "Average speed: " << exampleTrack.averageSpeed() << "m/s" << endl;
+    // Case 5: Track with multiple points including one at (0, 180)
+    {
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        Trackpoint eastPoint(Waypoint(0.0, 180.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
+        Track multiplePointsTrack(multiplePointsTrackPoints);
 
-    Waypoint highestPoint = exampleTrack.highestWaypoint();
-    cout << "Highest waypoint: " << highestPoint.latitude() << "o lat by "
-                                 << highestPoint.longitude() << "o lon at altitude "
-                                 << highestPoint.altitude() << "m" << endl;
+        // Get the most easterly waypoint
+        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
 
-    Waypoint lowestPoint = exampleTrack.lowestWaypoint();
-    cout << "Lowest waypoint: " << lowestPoint.latitude() << "o lat by "
-                                << lowestPoint.longitude() << "o lon at altitude "
-                                << lowestPoint.altitude() << "m" << endl;
+        // Check if the most easterly waypoint is indeed the expected one
+        BOOST_CHECK_CLOSE(mostEasterly.longitude(), -180.0, 0.01); // Reduced tolerance to 0.01 degrees
+    }
+
+    // Case 6: Track with multiple points including one at (0, 0) and another at (0, 180)
+    {
+        Trackpoint centralPoint(Waypoint(0.0, 0.0, 0.0), std::time(nullptr));
+        Trackpoint eastPoint(Waypoint(0.0, 180.0, 0.0), std::time(nullptr));
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
+        Track multiplePointsTrack(multiplePointsTrackPoints);
+
+        // Get the most easterly waypoint
+        Waypoint mostEasterly = multiplePointsTrack.mostEasterlyWaypoint();
+
+        // Check if the most easterly waypoint is indeed the expected one
+        BOOST_CHECK_CLOSE(mostEasterly.longitude(), -180.0, 0.01); // Reduced tolerance to 0.01 degrees
+    }
 }
