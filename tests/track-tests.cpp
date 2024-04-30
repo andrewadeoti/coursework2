@@ -3,6 +3,7 @@
 #include "track.h"
 #include "trackpoint.h"
 #include "waypoint.h"
+#include <ctime>
 
 using namespace GPS;
 
@@ -19,10 +20,10 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
 
     // Case 2: Track with single point at (0, 0)
     {
-        Waypoint centralPoint(0.0, 0.0, 0.0);
-        std::time_t currentTime = std::time(nullptr);
-        Trackpoint centralTrackpoint(centralPoint, currentTime);
-        std::vector<Trackpoint> singlePointTrackPoints = {centralTrackpoint};
+        Waypoint centralWaypoint(0.0, 0.0, 0.0);
+        std::time_t timestamp = std::time(nullptr);
+        Trackpoint centralPoint(centralWaypoint, timestamp);
+        std::vector<Trackpoint> singlePointTrackPoints = {centralPoint};
         Track singlePointTrack(singlePointTrackPoints);
 
         // Check if calling mostEasterlyWaypoint on a track with a single central point throws a domain error
@@ -31,14 +32,12 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
 
     // Case 3: Track with multiple points including one at (0, 90)
     {
-        Waypoint centralPoint(0.0, 0.0, 0.0);
-        Waypoint eastPoint(0.0, 90.0, 0.0);
-        std::time_t currentTime = std::time(nullptr);
-        Trackpoint centralTrackpoint(centralPoint, currentTime);
-        Trackpoint eastTrackpoint(eastPoint, currentTime);
-        std::vector<Trackpoint> multiplePointsTrackPoints;
-        multiplePointsTrackPoints.push_back(centralTrackpoint);
-        multiplePointsTrackPoints.push_back(eastTrackpoint);
+        Waypoint centralWaypoint(0.0, 0.0, 0.0);
+        Waypoint eastWaypoint(0.0, 90.0, 0.0);
+        std::time_t timestamp = std::time(nullptr);
+        Trackpoint centralPoint(centralWaypoint, timestamp);
+        Trackpoint eastPoint(eastWaypoint, timestamp);
+        std::vector<Trackpoint> multiplePointsTrackPoints = {centralPoint, eastPoint};
         Track multiplePointsTrack(multiplePointsTrackPoints);
 
         // Get the most easterly waypoint
@@ -49,5 +48,4 @@ BOOST_AUTO_TEST_CASE(testMostEasterlyWaypoint)
     }
 }
 
-}
 
